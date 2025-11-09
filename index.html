@@ -1,69 +1,97 @@
 <!doctype html>
-<html lang="hu">
+<html>
 <head>
+    <title>PF WEB</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PF WEB - Mobil Optimalizált</title>
     <link rel="stylesheet" href="leaflet/leaflet.css" />
     <script src="leaflet/leaflet.js"></script>
     <style>
-        html, body, #terkep_helye {
+        body, html {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             height: 100%;
-            width: 100%;
             margin: 0;
             padding: 0;
         }
 
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-family: Tahoma, sans-serif;
+        #terkep_helye {
+            height: 100%;
+            width: 100vw;
+            position: relative;
         }
 
         h1 {
             text-align: center;
-            font-size: clamp(1rem, 5vw, 2rem);
-            margin: 10px auto;
+            font-family: Tahoma, sans-serif;
+            white-space: nowrap;
+            overflow: visible;
+            margin: 10px 20px;
+            font-size: clamp(1.1rem, 3vw, 2rem);
             width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         #editButton {
             position: absolute;
-            top: 1em;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10000;
-            background-color: rgba(219, 139, 128, 0.7);
+            z-index: 10000; 
+            background-color: rgba(219, 139, 128, 0.5);
             color: black;
             border: 1px solid rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            padding: 0.8em 1.5em;
-            font-size: clamp(1rem, 5vw, 1.5rem);
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: clamp(1rem,3rem);
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(3px);
-            touch-action: manipulation;
         }
 
         #editButton.active {
-            background-color: rgba(90, 151, 90, 0.7);
+            background-color: rgba(90, 151, 90, 0.5);
+        }
+                /* --- Leaflet UI stílus egységesítése --- */
+        .leaflet-control-zoom,
+        .leaflet-control-layers {
+            background-color: rgba(255, 255, 255, 0.5) !important;
+            border: 1px solid rgba(0, 0, 0, 0.3) !important;
+            border-radius: 8px !important;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1) !important;
+            backdrop-filter: blur(3px);
+            overflow: hidden;
         }
 
-        /* Leaflet UI reszponzív */
-        .leaflet-control-zoom a,
-        .leaflet-control-layers-toggle {
-            width: 3em;
-            height: 3em;
-            font-size: 1.5em;
+        /* Zoom gombok stílusa */
+        .leaflet-control-zoom a {
+            background-color: rgba(255, 255, 255, 0.5) !important;
+            color: black !important;
+            border: none !important;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
         }
 
-        .leaflet-popup-content {
-            font-size: 1.2em;
+        .leaflet-control-zoom a:hover {
+            background-color: rgba(0, 128, 0, 0.6) !important;
         }
 
         .leaflet-control-layers-list {
-            font-size: 1rem;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 5px 10px;
+        }
+
+        .leaflet-control-layers-toggle {
+            background-color: rgba(255, 255, 255, 0.3) !important;
+            border: none !important;
+            border-radius: 10px !important;
+            box-shadow: 0 0 6px rgba(0,0,0,0.1);
+        }
+
+        .leaflet-control-layers-expanded {
+            border-radius: 10px !important;
         }
 
     </style>
@@ -76,27 +104,24 @@
     </div>
 
     <script>
-        const SUPABASE_URL = 'https://fsvfrzwgvdlrxtxotqzs.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzdmZyendndmRscnh0eG90cXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNDg4MzgsImV4cCI6MjA3NzkyNDgzOH0.VA5qByzPzJMYLQsjfVsMV3c6ZPBA6OvbCGD0nbno9ng';
-
+        var a=0.1
         // --- Térkép létrehozása ---
-        var map = L.map('terkep_helye', {
-            zoomControl: false,
+        var map = L.map(('terkep_helye'),{ zoomControl: false,
             minZoom: 9,
             maxZoom: 18,
             maxBounds: [
-                [47.65, 18.03],
-                [46.68, 19.009]
+            [47.65, 18.03], // ÉNY-i sarok 
+            [46.68, 19.009]  // DK-i sarok
             ],
             maxBoundsViscosity: 0.95
-        }).fitBounds([[47.61, 18.9], [46.67, 18.02]]);
+         }).fitBounds([[47.61,18.9],[46.67,18.02]]);
 
         // --- Alaprétegek ---
         var google = L.tileLayer('https://mt0.google.com/vt/lyrs=s&hl=hu&x={x}&y={y}&z={z}', {
-            attribution: '&copy; Google'
+            attribution: '&copy; <a href="https://www.google.com/maps">Google</a>'
         });
         var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap'
+            attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
         }).addTo(map);
 
         // --- GeoJSON betöltés ---
@@ -107,8 +132,9 @@
                     style: { color: 'red', weight: 4, fillOpacity: 0 }
                 }).addTo(map);
             });
+        const SUPABASE_URL = 'https://fsvfrzwgvdlrxtxotqzs.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzdmZyendndmRscnh0eG90cXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNDg4MzgsImV4cCI6MjA3NzkyNDgzOH0.VA5qByzPzJMYLQsjfVsMV3c6ZPBA6OvbCGD0nbno9ng'; // a "anon public" kulcs a Supabase Project Settings -> API -> anon key
 
-        // --- Supabase pontok betöltése ---
         fetch(`${SUPABASE_URL}/rest/v1/rpc/get_fertozott_tablak`, {
             headers: {
                 'apikey': SUPABASE_KEY,
@@ -120,34 +146,39 @@
         .then(r => r.json())
         .then(geojson => {
             L.geoJSON(geojson, {
-                pointToLayer: function(feature, latlng) {
-                    return L.circleMarker(latlng, {
-                        radius: 10,
-                        fillColor: 'white',
-                        color: 'orange',
-                        weight: 3,
-                        fillOpacity: 0.8
-                    }).bindPopup(
-                        `<div>Pont<br>Lat: ${latlng.lat.toFixed(6)}<br>Lon: ${latlng.lng.toFixed(6)}<br>Note: ${feature.properties.note || ''}</div>`
-                    );
-                }
-            }).addTo(map);
+    pointToLayer: function(feature, latlng) {
+        return L.circleMarker(latlng, {
+            radius: 8,
+            fillColor: 'white',   // belső szín
+            color: 'orange',       // körvonalszín
+            weight: 3,
+            fillOpacity: 0.8
+        }).bindPopup(
+            `Pont<br>Lat: ${latlng.lat.toFixed(6)}<br>Lon: ${latlng.lng.toFixed(6)}<br>Note: ${feature.properties.note || ''}`
+        );
+    }
+}).addTo(map);
+
+
         });
 
-        // --- Rétegkapcsoló és zoom ---
+        // --- Rétegkapcsoló ---
         L.control.layers({ 'OpenStreetMap': osm, 'Google': google }, {}, { position: 'bottomright' }).addTo(map);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         // --- Szerkesztés mód ---
+        // --- Szerkesztés mód ---
         let editMode = false;
         const editButton = document.getElementById('editButton');
 
+    
         L.DomEvent.disableClickPropagation(editButton);
         L.DomEvent.disableScrollPropagation(editButton);
 
         editButton.addEventListener('click', function (e) {
-            e.stopPropagation();
+            e.stopPropagation(); 
             editMode = !editMode;
+
             if (editMode) {
                 editButton.textContent = "Szerkesztés mód: Be";
                 editButton.classList.add("active");
@@ -166,36 +197,34 @@
                 map.keyboard.enable();
             }
         });
+ map.on('click', function(e) {
+    if (!editMode) return;
 
-        // --- Pont hozzáadása ---
-        map.on('click', function(e) {
-            if (!editMode) return;
+    const lat = e.latlng.lat;
+    const lon = e.latlng.lng;
+    const note = prompt("Megjegyzés a ponthoz (üresen is hagyhatod):");
+fetch(`${SUPABASE_URL}/rest/v1/rpc/add_fertozott_pont`, {
+    method: 'POST',
+    headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ lat: lat, lon: lon, note: note })
+})
+.then(r => {
+    if (!r.ok) throw new Error("Hiba a pont mentésénél");
+    // r.json() helyett egyszerűen:
+    L.circleMarker([lat, lon], { color: 'orange', fillColor:'white',radius: 8, fillOpacity: 0.8 })
+     .addTo(map)
+     .bindPopup(`Pont<br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}<br>Note: ${note}`);
+})
+.catch(err => console.error(err));
 
-            const lat = e.latlng.lat;
-            const lon = e.latlng.lng;
-            const note = prompt("Megjegyzés a ponthoz (üresen is hagyhatod):");
+});
 
-            fetch(`${SUPABASE_URL}/rest/v1/rpc/add_fertozott_pont`, {
-                method: 'POST',
-                headers: {
-                    'apikey': SUPABASE_KEY,
-                    'Authorization': `Bearer ${SUPABASE_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ lat: lat, lon: lon, note: note })
-            })
-            .then(r => {
-                if (!r.ok) throw new Error("Hiba a pont mentésénél");
-                L.circleMarker([lat, lon], {
-                    color: 'orange',
-                    fillColor: 'white',
-                    radius: 10,
-                    fillOpacity: 0.8
-                }).addTo(map)
-                  .bindPopup(`<div>Pont<br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}<br>Note: ${note}</div>`);
-            })
-            .catch(err => console.error(err));
-        });
+
+
 
     </script>
 </body>
