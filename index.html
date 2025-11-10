@@ -165,7 +165,7 @@ window.addEventListener('orientationchange', checkOrientation);
     .then(r => r.json())
     .then(d => {
         L.geoJSON(d, {
-            style: { color: 'red', weight: 3, fillColor:'white', fillOpacity: 0.10 } // piros körvonal, áttetsző belső
+            style: { color: 'blue', weight: 10, fillColor:'white', fillOpacity: 0.10 } // piros körvonal, áttetsző belső
         }).addTo(map);
         })
         .catch(err => console.warn('fejer.geojson betöltési hiba:', err));
@@ -300,6 +300,7 @@ window.addEventListener('orientationchange', checkOrientation);
     </script>
 </body>
 </html>
+
 
 
 
