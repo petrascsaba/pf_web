@@ -4,67 +4,16 @@
     <title>PF WEB</title>
     <meta charset="utf-8">
     <link rel="stylesheet" href="leaflet/leaflet.css" />
-    <script src="leaflet/leaflet.js"></script>
     <style>
-        body, html {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        #terkep_helye {
-            height: 100%;
-            width: 100vw;
-            position: relative;
-        }
-
-        h1 {
-            text-align: center;
-            font-family: Tahoma, sans-serif;
-            white-space: nowrap;
-            overflow: visible;
-            margin: 10px 20px;
-            font-size: clamp(1.1rem, 3vw, 2rem);
-            width: fit-content;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        #editButton {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10000; 
-            background-color: rgba(219, 139, 128, 0.5);
-            color: black;
-            border: 1px solid rgba(0, 0, 0, 0.5);
-            border-radius: 8px;
-            padding: 10px 20px;
-            font-size: clamp(1rem,3rem);
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
-            backdrop-filter: blur(3px);
-        }
-
-        #editButton.active {
-            background-color: rgba(90, 151, 90, 0.5);
-        }
-                /* --- Leaflet UI stílus egységesítése --- */
-        .leaflet-control-zoom,
-        .leaflet-control-layers {
-            background-color: rgba(255, 255, 255, 0.5) !important;
-            border: 1px solid rgba(0, 0, 0, 0.3) !important;
-            border-radius: 8px !important;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1) !important;
-            backdrop-filter: blur(3px);
-            overflow: hidden;
-        }
-
-        /* Zoom gombok stílusa */
+        body, html { display:flex; flex-direction:column; align-items:center; height:100%; margin:0; padding:0; }
+        #terkep_helye { height:100%; width:100vw; position:relative; }
+        h1 { text-align:center; font-family:Tahoma, sans-serif; margin:10px 20px; font-size:clamp(1.1rem,3vw,2rem); }
+        #editButton{ position:absolute; top:20px; left:50%; transform:translateX(-50%); z-index:10000; background:rgba(219,139,128,0.5); color:black; border:1px solid rgba(0,0,0,0.5); border-radius:8px; padding:10px 20px; font-size:clamp(1rem,3rem); cursor:pointer; box-shadow:0 0 20px rgba(0,0,0,0.4); backdrop-filter:blur(3px); }
+        #editControls{ position:absolute; top:70px; left:50%; transform:translateX(-50%); display:none; z-index:10000; gap:20px; }
+        #editControls button{ padding:10px 20px; border-radius:8px; border:1px solid rgba(0,0,0,0.5); cursor:pointer; font-size:clamp(1rem,3rem); box-shadow:0 0 20px rgba(0,0,0,0.4); backdrop-filter:blur(3px); }
+        #createButton{ background:rgba(29, 173, 0, 0.5); } #selectButton{ background:rgba(255,204,0,0.5); } #deselectButton{ background:rgba(255,183,0,0.5); } #deleteButton{ background:rgba(218,41,18,0.5); }
+        #editButton.active{ background:rgba(0, 255, 0, 0.4); }
+         /* Zoom gombok stílusa */
         .leaflet-control-zoom a {
             background-color: rgba(255, 255, 255, 0.5) !important;
             color: black !important;
@@ -77,185 +26,227 @@
             background-color: rgba(0, 128, 0, 0.6) !important;
         }
 
-        .leaflet-control-layers-list {
-            background-color: rgba(255, 255, 255, 0.5);
-            border-radius: 10px;
-            padding: 5px 10px;
-        }
+        /* Rétegváltó stílus */
+.leaflet-control-layers {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 0 6px rgba(0,0,0,0.2);
+}
 
-        .leaflet-control-layers-toggle {
-            background-color: rgba(255, 255, 255, 0.3) !important;
-            border: none !important;
-            border-radius: 10px !important;
-            box-shadow: 0 0 6px rgba(0,0,0,0.1);
-        }
+.leaflet-control-layers-toggle {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 0 6px rgba(0,0,0,0.2);
+}
 
-        .leaflet-control-layers-expanded {
-            border-radius: 10px !important;
-        }
-
+.leaflet-control-layers-expanded {
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    box-shadow: 0 0 6px rgba(0,0,0,0.2);
+}
     </style>
 </head>
-
 <body>
     <h1>Parlagfűvel fertőzött parcellák bejelölése:</h1>
     <div id="terkep_helye">
         <button id="editButton">Szerkesztés bekapcsolása</button>
+        <div id="editControls">
+            <button id="createButton">Pont létrehozás</button>
+            <button id="selectButton">Kijelölés</button>
+            <button id="deselectButton">Kijelölés megszüntetése</button>
+            <button id="deleteButton">Törlés</button>
+        </div>
     </div>
 
+    <script src="leaflet/leaflet.js"></script>
     <script>
-        var a=0.1
-        // --- Térkép létrehozása ---
-        var map = L.map(('terkep_helye'),{ zoomControl: false,
-            minZoom: 9,
-            maxZoom: 18,
-            maxBounds: [
-            [47.65, 18.03], // ÉNY-i sarok 
-            [46.68, 19.009]  // DK-i sarok
-            ],
-            maxBoundsViscosity: 0.95
-         }).fitBounds([[47.61,18.9],[46.67,18.02]]);
+    const SUPABASE_URL = 'https://fsvfrzwgvdlrxtxotqzs.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzdmZyendndmRscnh0eG90cXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNDg4MzgsImV4cCI6MjA3NzkyNDgzOH0.VA5qByzPzJMYLQsjfVsMV3c6ZPBA6OvbCGD0nbno9ng';
 
-        // --- Alaprétegek ---
-        var google = L.tileLayer('https://mt0.google.com/vt/lyrs=s&hl=hu&x={x}&y={y}&z={z}', {
-            attribution: '&copy; <a href="https://www.google.com/maps">Google</a>'
-        });
-        var osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-        }).addTo(map);
+    // --- Térkép ---
+    const map = L.map('terkep_helye', { zoomControl:false, minZoom:9, maxZoom:18,
+        maxBounds:[[47.65,18.03],[46.68,19.009]], maxBoundsViscosity:0.95, zoomAnimation: true      
+    }).fitBounds([[47.61,18.9],[46.67,18.02]]);
 
-        // --- GeoJSON betöltés ---
-        fetch('fejer.geojson')
-            .then(r => r.json())
-            .then(d => {
-                L.geoJSON(d, {
-                    style: { color: 'red', weight: 4, fillOpacity: 0 }
-                }).addTo(map);
-            });
-        const SUPABASE_URL = 'https://fsvfrzwgvdlrxtxotqzs.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzdmZyendndmRscnh0eG90cXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNDg4MzgsImV4cCI6MjA3NzkyNDgzOH0.VA5qByzPzJMYLQsjfVsMV3c6ZPBA6OvbCGD0nbno9ng'; // a "anon public" kulcs a Supabase Project Settings -> API -> anon key
-
-        fetch(`${SUPABASE_URL}/rest/v1/rpc/get_fertozott_tablak`, {
-            headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            method: 'POST'
-        })
-        .then(r => r.json())
-        .then(geojson => {
-            L.geoJSON(geojson, {
-    pointToLayer: function(feature, latlng) {
-        return L.circleMarker(latlng, {
-            radius: 8,
-            fillColor: 'white',   // belső szín
-            color: 'orange',       // körvonalszín
-            weight: 3,
-            fillOpacity: 0.8
-        }).bindPopup(
-            `Pont<br>Lat: ${latlng.lat.toFixed(6)}<br>Lon: ${latlng.lng.toFixed(6)}<br>Note: ${feature.properties.note || ''}`
-        );
-    }
-}).addTo(map);
-
-
-        });
-
-        // --- Rétegkapcsoló ---
-        L.control.layers({ 'OpenStreetMap': osm, 'Google': google }, {}, { position: 'bottomright' }).addTo(map);
-        L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-        // --- Szerkesztés mód ---
-        // --- Szerkesztés mód ---
-        let editMode = false;
-        const editButton = document.getElementById('editButton');
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'&copy; OpenStreetMap' }).addTo(map);
+    const google = L.tileLayer('https://mt0.google.com/vt/lyrs=s&hl=hu&x={x}&y={y}&z={z}');
 
     
-        L.DomEvent.disableClickPropagation(editButton);
-        L.DomEvent.disableScrollPropagation(editButton);
+    // --- Rétegkapcsoló ---
+    L.control.layers({ 'OpenStreetMap': osm, 'Google': google }, {}, { position: 'bottomright' }).addTo(map);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        editButton.addEventListener('click', function (e) {
-            e.stopPropagation(); 
-            editMode = !editMode;
+    // --- Változók és UI elemek ---
+    let editMode = false, createMode = false, selectMode = false;
+    let selectedMarkers = [];
 
-            if (editMode) {
-                editButton.textContent = "Szerkesztés mód: Be";
-                editButton.classList.add("active");
-                map.dragging.disable();
-                map.scrollWheelZoom.disable();
-                map.doubleClickZoom.disable();
-                map.boxZoom.disable();
-                map.keyboard.disable();
+    const editButton = document.getElementById('editButton');
+    const editControls = document.getElementById('editControls');
+    const createButton = document.getElementById('createButton');
+    const selectButton = document.getElementById('selectButton');
+    const deselectButton = document.getElementById('deselectButton');
+    const deleteButton = document.getElementById('deleteButton');
+    L.DomEvent.disableClickPropagation(editButton);
+    L.DomEvent.disableScrollPropagation(editButton);
+    L.DomEvent.disableClickPropagation(editControls);
+    L.DomEvent.disableScrollPropagation(editControls);
+
+    // segédfüggvény markerhez handler csatolására
+    function attachMarkerHandlers(marker, id) {
+        marker.on('click', function(e){
+            if (selectMode) {
+                L.DomEvent.stopPropagation(e);
+
+                if (!selectedMarkers.includes(marker)) {
+                    marker.setStyle({ color: 'black', fillColor: 'yellow' });
+                    selectedMarkers.push(marker);
+                } else {
+                    marker.setStyle({ color: 'black', fillColor: 'white' });
+                    selectedMarkers = selectedMarkers.filter(m => m !== marker);
+                }
             } else {
-                editButton.textContent = "Szerkesztés mód: Ki";
-                editButton.classList.remove("active");
-                map.dragging.enable();
-                map.scrollWheelZoom.enable();
-                map.doubleClickZoom.enable();
-                map.boxZoom.enable();
-                map.keyboard.enable();
+                marker.openPopup();
             }
         });
- // előtte biztosítjuk, hogy ne legyen másik click handler
-map.off('click'); // eltávolít minden korábbi click handlert
-
-map.on('click', function(e) {
-    if (!editMode) return;
-
-    const lat = e.latlng.lat;
-    const lon = e.latlng.lng;
-
-    // Debug: írd ki a konzolra, hogy kattintottál
-    console.log('map clicked at', { lat, lon });
-
-    const note = prompt("Megjegyzés a ponthoz (üresen is hagyhatod):");
-
-    // Debug: mutassuk meg, mi jött vissza a promptból
-    console.log('prompt returned:', { note, type: typeof note });
-
-    // Ha Cancel-t nyomott, akkor note === null → kilépünk (nem mentünk)
-    if (note === null) {
-        console.log('Pont hozzáadása megszakítva (Cancel).');
-        // opcionálisan: rövid popup értesítés a felhasználónak
-        // L.popup().setLatLng([lat, lon]).setContent('Pont hozzáadása megszakítva.').openOn(map);
-        return;
     }
 
-    // ha ide jutunk: a felhasználó OK-t nyomott (üres stringet is elfogadunk)
-    const payload = { lat: Number(lat), lon: Number(lon), note: note };
+    // --- GeoJSON (fejer.geojson) betöltése
+    fetch('fejer.geojson')
+    .then(r => r.json())
+    .then(d => {
+        L.geoJSON(d, {
+            style: { color: 'red', weight: 3, fillColor:'white', fillOpacity: 0.10 } // piros körvonal, áttetsző belső
+        }).addTo(map);
+        })
+        .catch(err => console.warn('fejer.geojson betöltési hiba:', err));
 
-    console.log('küldés a szerverre:', payload);
-
-    fetch(`${SUPABASE_URL}/rest/v1/rpc/add_fertozott_pont`, {
-        method: 'POST',
-        headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
+    function loadPoints() {
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/get_fertozott_tablak`, {
+        method:'POST',
+        headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' }
     })
-    .then(async r => {
-        if (!r.ok) {
-            const text = await r.text();
-            console.error('Szerverhiba:', r.status, text);
-            throw new Error("Hiba a pont mentésénél: " + text);
+    .then(r => r.json())
+    .then(geojson => {
+        // Először töröljük a régi pontokat
+        if (window.allMarkers) {
+            window.allMarkers.forEach(m => map.removeLayer(m));
         }
-        console.log('Sikeres mentés, kirajzolom a pontot.');
-        L.circleMarker([lat, lon], { color: 'red', fillColor: 'white', radius: 6, fillOpacity: 0.8 })
-         .addTo(map)
-         .bindPopup(`Pont<br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}<br>Note: ${note || ''}`);
+        window.allMarkers = [];
+
+        L.geoJSON(geojson, {
+            pointToLayer: function(feature, latlng) {
+                const m = L.circleMarker(latlng, { radius:8, fillColor:'white', color:'black', weight:3, fillOpacity:0.8 });
+                m.feature = feature;
+                m.bindPopup(`Pont<br>Lat: ${latlng.lat.toFixed(6)}<br>Lon: ${latlng.lng.toFixed(6)}<br>Note: ${feature.properties?.note || ''}`);
+                attachMarkerHandlers(m, feature.properties?.id);
+                window.allMarkers.push(m);
+                return m;
+            }
+        }).addTo(map);
     })
-    .catch(err => {
-        console.error(err);
-        // opcionális: értesítés a felhasználónak
-        // L.popup().setLatLng([lat, lon]).setContent('Hiba a mentésnél').openOn(map);
+    .catch(err => console.warn('Supabase betöltési hiba:', err));
+}
+ loadPoints();
+    // --- UI viselkedés ---
+    editButton.addEventListener('click', () => {
+        editMode = !editMode;
+        if (editMode) {
+            editButton.textContent = "Szerkesztés mód: Be";
+            editButton.classList.add('active');
+            map.dragging.disable(); 
+            map.scrollWheelZoom.disable();
+            map.doubleClickZoom.disable();
+            editControls.style.display = 'flex';
+        } else {
+            editButton.textContent = "Szerkesztés mód: Ki";
+            editButton.classList.remove('active');
+            map.dragging.enable(); map.scrollWheelZoom.enable();
+            editControls.style.display = 'none';
+            // kikapcsolunk minden módot és töröljük vizuális jelzéseket
+            createMode = false; selectMode = false;
+            createButton.style.border = '1px solid rgba(0,0,0,0.5)';
+            selectButton.style.border = '1px solid rgba(0,0,0,0.5)';
+        }
     });
+
+    createButton.addEventListener('click', () => {
+        if (!editMode) return alert("Először kapcsold be a szerkesztés módot!");
+        createMode = !createMode;
+        if (createMode) { selectMode = false; selectButton.style.border = '1px solid rgba(0,0,0,0.5)'; }
+        createButton.style.border = createMode ? '3px solid green' : '1px solid rgba(0,0,0,0.5)';
+    });
+    deselectButton.addEventListener('click', () => {
+        if (selectedMarkers.length === 0) return; // nincs mit deselectelni
+        selectedMarkers.forEach(marker => {
+            marker.setStyle({ color: 'black', fillColor: 'white' });
+            marker.closePopup();
+        });
+        selectedMarkers = [];
+        });
+    selectButton.addEventListener('click', () => {
+        if (!editMode) return alert("Először kapcsold be a szerkesztés módot!");
+        selectMode = !selectMode;
+        if (selectMode) { createMode = false; createButton.style.border = '1px solid rgba(0,0,0,0.5)'; }
+        selectButton.style.border = selectMode ? '3px solid orange' : '1px solid rgba(0,0,0,0.5)';
+    });
+   deleteButton.addEventListener('click', () => {
+    if (selectedMarkers.length === 0) { 
+        alert("Nincs kijelölt pont!"); 
+        return; 
+    }
+    selectedMarkers.forEach(marker => {
+        // törlés a térképről
+        map.removeLayer(marker);
+
+        // törlés Supabase-ból, ha van id
+        const id = marker.feature?.properties?.id;
+        if (id) {
+            fetch(`${SUPABASE_URL}/rest/v1/rpc/delete_fertozott_pont`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: id })
+            })
+            .then(r => { 
+                if (!r.ok) console.error('Supabase törlés hiba:', r.statusText); 
+            })
+            .catch(err => console.error('Supabase törlés hiba:', err));
+        }
+    });
+    // ürítjük a kijelölt listát
+    selectedMarkers = [];
 });
+
+
+    // --- Pont létrehozás kattintásra (csak createMode esetén) ---
+    map.on('click', function(e) {
+        if (!editMode) return;
+        if (!createMode) return;
+        const lat = e.latlng.lat, lon = e.latlng.lng;
+        const note = prompt("Megjegyzés a ponthoz (üresen is hagyhatod):");
+        if (note === null) return;
+
+        const payload = { lat:Number(lat), lon:Number(lon), note:note };
+        fetch(`${SUPABASE_URL}/rest/v1/rpc/add_fertozott_pont`, {
+            method:'POST',
+            headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(async r => {
+            if (!r.ok) {
+                const text = await r.text();
+                throw new Error("Hiba a pont mentésénél: " + text);
+            }
+             loadPoints();
+        })
+        .catch(err => { console.error(err); alert("Hiba a mentésnél"); });
+    });
+
+   
+
     </script>
 </body>
 </html>
-
-
-
