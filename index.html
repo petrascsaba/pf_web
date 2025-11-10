@@ -197,36 +197,64 @@
                 map.keyboard.enable();
             }
         });
- map.on('click', function(e) {
+ // előtte biztosítjuk, hogy ne legyen másik click handler
+map.off('click'); // eltávolít minden korábbi click handlert
+
+map.on('click', function(e) {
     if (!editMode) return;
 
     const lat = e.latlng.lat;
     const lon = e.latlng.lng;
+
+    // Debug: írd ki a konzolra, hogy kattintottál
+    console.log('map clicked at', { lat, lon });
+
     const note = prompt("Megjegyzés a ponthoz (üresen is hagyhatod):");
-fetch(`${SUPABASE_URL}/rest/v1/rpc/add_fertozott_pont`, {
-    method: 'POST',
-    headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ lat: lat, lon: lon, note: note })
-})
-.then(r => {
-    if (!r.ok) throw new Error("Hiba a pont mentésénél");
-    // r.json() helyett egyszerűen:
-    L.circleMarker([lat, lon], { color: 'orange', fillColor:'white', radius: 6, fillOpacity: 0.8 })
-     .addTo(map)
-     .bindPopup(`Pont<br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}<br>Note: ${note}`);
-})
-.catch(err => console.error(err));
 
+    // Debug: mutassuk meg, mi jött vissza a promptból
+    console.log('prompt returned:', { note, type: typeof note });
+
+    // Ha Cancel-t nyomott, akkor note === null → kilépünk (nem mentünk)
+    if (note === null) {
+        console.log('Pont hozzáadása megszakítva (Cancel).');
+        // opcionálisan: rövid popup értesítés a felhasználónak
+        // L.popup().setLatLng([lat, lon]).setContent('Pont hozzáadása megszakítva.').openOn(map);
+        return;
+    }
+
+    // ha ide jutunk: a felhasználó OK-t nyomott (üres stringet is elfogadunk)
+    const payload = { lat: Number(lat), lon: Number(lon), note: note };
+
+    console.log('küldés a szerverre:', payload);
+
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/add_fertozott_pont`, {
+        method: 'POST',
+        headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(async r => {
+        if (!r.ok) {
+            const text = await r.text();
+            console.error('Szerverhiba:', r.status, text);
+            throw new Error("Hiba a pont mentésénél: " + text);
+        }
+        console.log('Sikeres mentés, kirajzolom a pontot.');
+        L.circleMarker([lat, lon], { color: 'red', fillColor: 'white', radius: 6, fillOpacity: 0.8 })
+         .addTo(map)
+         .bindPopup(`Pont<br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}<br>Note: ${note || ''}`);
+    })
+    .catch(err => {
+        console.error(err);
+        // opcionális: értesítés a felhasználónak
+        // L.popup().setLatLng([lat, lon]).setContent('Hiba a mentésnél').openOn(map);
+    });
 });
-
-
-
-
     </script>
 </body>
 </html>
+
 
