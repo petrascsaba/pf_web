@@ -129,7 +129,7 @@
             .then(r => r.json())
             .then(d => {
                 L.geoJSON(d, {
-                    style: { color: 'orange', weight: 4, fillOpacity: 0 }
+                    style: { color: 'red', weight: 4, fillOpacity: 0 }
                 }).addTo(map);
             });
         const SUPABASE_URL = 'https://fsvfrzwgvdlrxtxotqzs.supabase.co';
@@ -256,5 +256,6 @@ map.on('click', function(e) {
     </script>
 </body>
 </html>
+
 
 
