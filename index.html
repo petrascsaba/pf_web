@@ -13,7 +13,36 @@
         #editControls button{color:black;  padding:10px 20px; border-radius:8px; border:1px solid rgba(0,0,0,0.5); cursor:pointer; font-size:clamp(1rem,3rem); box-shadow:0 0 20px rgba(0,0,0,0.4); backdrop-filter:blur(3px); }
         #createButton{ background:rgba(29, 173, 0, 0.5); } #selectButton{ background:rgba(255,204,0,0.5); } #deselectButton{ background:rgba(255,183,0,0.5); } #deleteButton{ background:rgba(218,41,18,0.5); }
         #editButton.active{ background:rgba(0, 255, 0, 0.4); }
-         /* Zoom gombok stílusa */
+        /* Ha a készülék álló módban van */
+    @media only screen and (orientation: portrait) {
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        height: 100vh;
+        background: #f2f2f2;
+        overflow: hidden;
+    }
+
+    #terkep_helye, h1, #editButton, #editControls {
+        display: none; /* a térkép eltűnik */
+    }
+
+    #rotateMessage {
+        display: block;
+        font-size: 1.5rem;
+        color: #333;
+        padding: 20px;
+    }
+}
+
+/* Alapértelmezett rejtett üzenet */
+#rotateMessage {
+    display: none;
+}
+ 
+        /* Zoom gombok stílusa */
         .leaflet-control-zoom a {
             background-color: rgba(255, 255, 255, 0.5) !important;
             color: black !important;
@@ -48,6 +77,10 @@
 </head>
 <body>
     <h1>Parlagfűvel fertőzött parcellák bejelölése:</h1>
+    <div id="rotateMessage">
+    Kérlek, fordítsd el a telefonod vízszintes (landscape) módba a térkép használatához.
+    </div>
+
     <div id="terkep_helye">
         <button id="editButton">Szerkesztés bekapcsolása</button>
         <div id="editControls">
@@ -60,6 +93,23 @@
 
     <script src="leaflet/leaflet.js"></script>
     <script>
+        function checkOrientation() {
+    if(window.innerHeight > window.innerWidth) {
+        // portrait
+        document.getElementById('rotateMessage').style.display = 'block';
+        document.getElementById('terkep_helye').style.display = 'none';
+    } else {
+        // landscape
+        document.getElementById('rotateMessage').style.display = 'none';
+        document.getElementById('terkep_helye').style.display = 'block';
+    }
+}
+
+// inicializálás
+checkOrientation();
+window.addEventListener('resize', checkOrientation);
+window.addEventListener('orientationchange', checkOrientation);
+
     const SUPABASE_URL = 'https://fsvfrzwgvdlrxtxotqzs.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzdmZyendndmRscnh0eG90cXpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIzNDg4MzgsImV4cCI6MjA3NzkyNDgzOH0.VA5qByzPzJMYLQsjfVsMV3c6ZPBA6OvbCGD0nbno9ng';
 
@@ -250,5 +300,6 @@
     </script>
 </body>
 </html>
+
 
 
